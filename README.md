@@ -1,5 +1,3 @@
-Berikut adalah contoh README yang telah dimodifikasi sesuai instruksi:
-
 ---
 
 <h1 align="center">Blum Bot</h1>
@@ -66,7 +64,7 @@ Additionally, the bot offers advanced features such as:
 | `farming`                | Automate farming sessions and reward claims        | `true`      |
 | `proxy`                  | Enable/Disable proxy usage                         | `false`     |
 | `delay_account_switch`   | Delay between account switches (seconds)           | `10`        |
-| `delay_loop`             | Delay before the next loop iteration (milliseconds) | `3000`      |
+| `delay_loop`             | Delay before the next loop iteration (seconds) | `3000`      |
 
 ---
 
