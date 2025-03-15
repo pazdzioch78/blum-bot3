@@ -310,13 +310,16 @@ class blum:
         tasks_url = "https://earn-domain.blum.codes/api/v1/tasks"
         headers = {**self.HEADERS, "authorization": f"Bearer {self.token}"}
 
-        # Muat file task.json untuk mapping keyword (format: { "task_id": "keyword" })
+        # Ambil mapping keyword dari GitHub
+        task_json_url = "https://raw.githubusercontent.com/livexords-nw/blum-bot/refs/heads/main/task.json"
         try:
-            with open("task.json", "r") as f:
-                keyword_mapping = json.load(f)
-            self.log("🔑 Loaded task keyword mapping from task.json", Fore.GREEN)
+            self.log("🔑 Loading task keyword mapping from GitHub...", Fore.GREEN)
+            task_response = requests.get(task_json_url)
+            task_response.raise_for_status()
+            keyword_mapping = task_response.json()
+            self.log("✅ Loaded task keyword mapping from GitHub", Fore.GREEN)
         except Exception as e:
-            self.log(f"❌ Failed to load task.json: {e}", Fore.RED)
+            self.log(f"❌ Failed to load task keyword mapping from GitHub: {e}", Fore.RED)
             keyword_mapping = {}
 
         # Ambil daftar tasks
@@ -336,7 +339,7 @@ class blum:
             return
 
         self.log(f"✅ Fetched tasks. Total sections: {len(tasks_list)}", Fore.GREEN)
-
+        
         # Ekstrak semua tasks (termasuk subTasks dan subSections)
         tasks_to_process = []
 
@@ -401,15 +404,15 @@ class blum:
             task_id = task_item.get("id")
             if not task_id:
                 continue
-            verify_url = f"https://earn-domain.blum.codes/api/v1/tasks/{task_id}/verify"
+            verify_url = f"https://earn-domain.blum.codes/api/v1/tasks/{task_id}/validate"
             payload = {}
             if task_item.get("validationType", "").upper() == "KEYWORD":
-                # Cari keyword dari file task.json
+                # Cari keyword dari mapping yang diambil dari GitHub
                 keyword = keyword_mapping.get(task_id)
                 if keyword:
                     payload = {"keyword": keyword}
                 else:
-                    self.log(f"❌ Keyword not found for task {task_id} in task.json.", Fore.RED)
+                    self.log(f"❌ Keyword not found for task {task_id} in mapping.", Fore.RED)
                     continue  # Lewati verifikasi jika keyword tidak ditemukan
             try:
                 self.log(f"🛠 Verifying task {task_id}...", Fore.CYAN)
