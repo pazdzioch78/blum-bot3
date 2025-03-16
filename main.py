@@ -4,7 +4,8 @@ import time
 from colorama import Fore
 import requests
 import random
-
+from fake_useragent import UserAgent
+import asyncio
 
 class blum:
     BASE_URL = "https://user-domain.blum.codes/api/v1/"
@@ -15,6 +16,8 @@ class blum:
         "origin": "https://telegram.blum.codes",
         "referer": "https://telegram.blum.codes/",
         "priority": "u=1, i", 
+        "Content-Type": "application/json",
+        "Lang": "en",
         "sec-ch-ua": '"Microsoft Edge";v="134", "Chromium";v="134", "Not:A-Brand";v="24", "Microsoft Edge WebView2";v="134"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Windows"',
@@ -28,6 +31,7 @@ class blum:
         self.query_list = self.load_query("query.txt")
         self.token = None
         self.config = self.load_config()
+        self.uid = None
 
     def banner(self) -> None:
         """Displays the banner for the bot."""
@@ -165,6 +169,7 @@ class blum:
             u_name = user_me_data.get("username", "N/A")
             referrer_token = user_me_data.get("referrerToken", "N/A")
             u_created_at = user_me_data.get("createdAt", "N/A")
+            self.uid = u_id
 
             self.log("👤 User Info:", Fore.GREEN)
             self.log(f"    - ID: {u_id}", Fore.CYAN)
@@ -226,13 +231,12 @@ class blum:
                 pass
     
     def daily(self) -> None:
-        import time
         self.log("🔄 Attempting to check daily reward...", Fore.GREEN)
-        
+
         daily_url = "https://game-domain.blum.codes/api/v2/daily-reward"
         daily_headers = {**self.HEADERS, "authorization": f"Bearer {self.token}"}
-        
-        # API 1: GET reward info
+
+        # API 1: GET daily reward info
         try:
             self.log("📡 Sending GET daily reward request...", Fore.CYAN)
             response = requests.get(daily_url, headers=daily_headers)
@@ -258,7 +262,7 @@ class blum:
             current_streak = data.get("currentStreakDays", "N/A")
             today_reward = data.get("todayReward", {})
             can_claim_at = data.get("canClaimAt", None)
-            
+
             self.log("✅ Daily reward info received:", Fore.GREEN)
             self.log(f"    - Claim: {claim_status}", Fore.CYAN)
             self.log(f"    - Current Streak Days: {current_streak}", Fore.CYAN)
@@ -268,19 +272,12 @@ class blum:
             self.log(f"❌ Error processing daily reward info: {e}", Fore.RED)
             return
 
-        # Cek apakah saat ini sudah waktunya untuk claim reward
-        current_time = int(time.time() * 1000)
-        self.log(f"⏰ Device current time: {current_time}", Fore.CYAN)
-        
-        if can_claim_at is None:
-            self.log("❌ 'canClaimAt' not found in response.", Fore.RED)
+        # Jika claim_status bernilai "unavailable", jangan klaim daily reward
+        if isinstance(claim_status, str) and claim_status.lower() == "unavailable":
+            self.log("🚫 Daily reward claim is unavailable. Skipping claim.", Fore.YELLOW)
             return
 
-        if current_time < int(can_claim_at):
-            self.log("⏳ Reward is not claimable yet. Please wait until the claim time.", Fore.YELLOW)
-            return
-
-        # API 2: Jika sudah waktunya, claim reward dengan POST
+        # Langsung claim daily reward tanpa memeriksa waktu
         try:
             self.log("🚀 Claiming daily reward...", Fore.CYAN)
             claim_response = requests.post(daily_url, headers=daily_headers)
@@ -294,13 +291,69 @@ class blum:
                 self.log(f"📄 Response content: {claim_response.text}", Fore.RED)
             except Exception:
                 pass
+            return
         except Exception as e:
             self.log(f"❌ Unexpected error during claiming daily reward: {e}", Fore.RED)
             try:
                 self.log(f"📄 Response content: {claim_response.text}", Fore.RED)
             except Exception:
                 pass
+            return
 
+        # Cek saldo reward teman (friend balance) setelah claim daily reward
+        friends_balance_url = "https://wallet-domain.blum.codes/api/v1/friends/balance"
+        try:
+            self.log("📡 Checking friend reward balance...", Fore.CYAN)
+            fb_response = requests.get(friends_balance_url, headers=daily_headers)
+            fb_response.raise_for_status()
+            fb_data = fb_response.json()
+            amount = fb_data.get("amount", "N/A")
+            can_claim = fb_data.get("canClaim", False)
+            can_claim_at = fb_data.get("canClaimAt", None)
+            self.log("✅ Friend reward balance info received:", Fore.GREEN)
+            self.log(f"    - Amount: {amount}", Fore.CYAN)
+            self.log(f"    - Can Claim: {can_claim}", Fore.CYAN)
+            self.log(f"    - Can Claim At: {can_claim_at}", Fore.CYAN)
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Failed to fetch friend reward balance: {e}", Fore.RED)
+            try:
+                self.log(f"📄 Response content: {fb_response.text}", Fore.RED)
+            except Exception:
+                pass
+            return
+        except Exception as e:
+            self.log(f"❌ Unexpected error during GET friend reward balance: {e}", Fore.RED)
+            try:
+                self.log(f"📄 Response content: {fb_response.text}", Fore.RED)
+            except Exception:
+                pass
+            return
+
+        # Jika friend reward dapat di-claim, maka lakukan claim
+        if can_claim:
+            friends_claim_url = "https://wallet-domain.blum.codes/api/v1/friends/claim"
+            try:
+                self.log("🚀 Claiming friend reward...", Fore.CYAN)
+                friends_claim_response = requests.post(friends_claim_url, headers=daily_headers)
+                friends_claim_response.raise_for_status()
+                friends_claim_data = friends_claim_response.json()
+                self.log("✅ Friend reward claimed successfully:", Fore.GREEN)
+                self.log(f"    - Claimed Amount: {friends_claim_data.get('amount', 'N/A')}", Fore.CYAN)
+            except requests.exceptions.RequestException as e:
+                self.log(f"❌ Failed to claim friend reward: {e}", Fore.RED)
+                try:
+                    self.log(f"📄 Response content: {friends_claim_response.text}", Fore.RED)
+                except Exception:
+                    pass
+            except Exception as e:
+                self.log(f"❌ Unexpected error during claiming friend reward: {e}", Fore.RED)
+                try:
+                    self.log(f"📄 Response content: {friends_claim_response.text}", Fore.RED)
+                except Exception:
+                    pass
+        else:
+            self.log("🚫 Friend reward cannot be claimed at this time.", Fore.YELLOW)
+        
     def task(self) -> None:
         import time
         import json
@@ -497,7 +550,26 @@ class blum:
         # Ekstrak informasi farming dari Blum points
         farming_info = blum_points.get("farming")
         if not farming_info:
-            self.log("❌ Farming info not available in Blum points data.", Fore.RED)
+            self.log("❌ Farming info not available in Blum points data. Starting farming session...", Fore.YELLOW)
+            # Jika tidak ada farming_info, langsung mulai sesi farming
+            start_url = "https://wallet-domain.blum.codes/api/v1/farming/start"
+            try:
+                self.log("🚜 Starting farming session...", Fore.CYAN)
+                start_response = requests.post(start_url, headers=headers)
+                start_response.raise_for_status()
+                start_data = start_response.json()
+                self.log("✅ Farming session started:", Fore.GREEN)
+                self.log(f"    - Start Time: {start_data.get('startTime', 'N/A')}", Fore.CYAN)
+                self.log(f"    - End Time: {start_data.get('endTime', 'N/A')}", Fore.CYAN)
+                self.log(f"    - Current Time: {start_data.get('currentTime', 'N/A')}", Fore.CYAN)
+                self.log(f"    - Earnings Rate: {start_data.get('earningsRate', 'N/A')}", Fore.CYAN)
+                self.log(f"    - Balance: {start_data.get('balance', 'N/A')}", Fore.CYAN)
+            except requests.exceptions.RequestException as e:
+                self.log(f"❌ Failed to start farming session: {e}", Fore.RED)
+                try:
+                    self.log(f"📄 Response content: {start_response.text}", Fore.RED)
+                except Exception:
+                    pass
             return
 
         start_time = farming_info.get("startTime", "N/A")
@@ -562,6 +634,155 @@ class blum:
                     self.log(f"📄 Response content: {start_response.text}", Fore.RED)
                 except Exception:
                     pass
+
+    def game(self) -> None:
+
+        # Define color aliases
+        green = Fore.GREEN
+        white = Fore.WHITE
+        red = Fore.RED
+        cyan = Fore.CYAN
+        yellow = Fore.YELLOW
+
+        self.log("🎮 Starting game process...", green)
+
+        # Prepare headers using self.HEADERS and token from self.token
+        headers = {**self.HEADERS, "authorization": f"Bearer {self.token}"}
+
+        # API endpoints
+        balance_url = "https://wallet-domain.blum.codes/api/v1/wallet/my/points/balance"
+        play_url = "https://game-domain.blum.codes/api/v2/game/play"
+        claim_url = "https://game-domain.blum.codes/api/v2/game/claim"
+
+        # Main loop: continue playing until no tickets remain
+        while True:
+            # Fetch wallet points balance
+            try:
+                self.log("📡 Fetching wallet points balance...", cyan)
+                balance_response = requests.get(balance_url, headers=headers)
+                balance_response.raise_for_status()
+                balance_data = balance_response.json()
+            except requests.exceptions.RequestException as e:
+                self.log(f"❌ Failed to fetch wallet points balance: {e}", red)
+                try:
+                    self.log(f"📄 Response content: {balance_response.text}", red)
+                except Exception:
+                    pass
+                break
+            except Exception as e:
+                self.log(f"❌ Unexpected error fetching wallet points balance: {e}", red)
+                break
+
+            # Find Play passes data based on specific currencyId
+            play_passes = None
+            for point in balance_data.get("points", []):
+                if point.get("currencyId") == "2fcd0259-9086-474b-80f6-88c66c4f9e74":
+                    play_passes = point
+                    break
+            if play_passes is None:
+                self.log("❌ Play passes data not found in wallet points balance.", red)
+                break
+
+            try:
+                ticket_count = float(play_passes.get("balance", "0"))
+            except Exception:
+                self.log("❌ Failed to parse Play passes balance.", red)
+                break
+
+            if ticket_count <= 0:
+                self.log("🚫 No game tickets available. Exiting game loop.", red)
+                break
+
+            self.log(f"{green}You have {white}{ticket_count}{green} game ticket(s) available.", green)
+
+            # Initiate a new game session
+            try:
+                self.log("🎮 Initiating game play...", cyan)
+                game_response = requests.post(play_url, headers=headers)
+                game_response.raise_for_status()
+                game_data = game_response.json()
+                game_id = game_data.get("gameId")
+                if not game_id:
+                    self.log("❌ Game ID not found in game play response.", red)
+                    break
+                self.log(f"✅ Game play initiated. Game ID: {white}{game_id}", green)
+            except requests.exceptions.RequestException as e:
+                self.log(f"❌ Failed to initiate game play: {e}", red)
+                try:
+                    self.log(f"📄 Response content: {game_response.text}", red)
+                except Exception:
+                    pass
+                break
+            except Exception as e:
+                self.log(f"❌ Unexpected error during game play: {e}", red)
+                break
+
+            # Wait a random duration between 30 and 38 seconds before claiming the game
+            wait_time = random.randint(30, 38)
+            self.log(f"⏳ Waiting for {white}{wait_time}{cyan} seconds before claiming the game...", cyan)
+            time.sleep(wait_time)
+
+            # Define a function to claim the game using the stored game_id
+            def claim_game():
+                try:
+                    points = random.randint(self.config.get("low_point", 260), self.config.get("high_point", 280))
+                    freeze = random.randint(1, 2)
+                    payload = json.dumps({
+                        "game_id": game_id,
+                        "points": points,
+                        "freeze": freeze
+                    })
+                    self.log("🔐 Creating payload for claim...", cyan)
+                    _headers = {
+                        "User-Agent": UserAgent().random,
+                        "Content-Type": "application/json",
+                    }
+                    res_payload = requests.post("https://blum-payload.sdsproject.org", headers=_headers, data=payload)
+                    res_payload.raise_for_status()
+
+                    # Send claim request with the encrypted payload
+                    res = requests.post(claim_url, headers=headers, data=res_payload.text)
+                    res.raise_for_status()
+                    return res, points
+                except Exception as e:
+                    self.log(f"❌ Error in claim_game: {e}", red)
+                    return None, None
+
+            # Loop to attempt claim until a valid result is obtained for the same game session
+            while True:
+                res, points = claim_game()
+                if res is None:
+                    self.log("❌ Failed to claim game, retrying...", red)
+                    time.sleep(5)
+                    continue
+
+                if "OK" in res.text:
+                    self.log(f"🎉 Successfully earned {white}{points}{green} points from the game!", green)
+                    ticket_count -= 1
+                    self.log(f"🎟️ Remaining game ticket(s): {white}{ticket_count}", green)
+                    break
+
+                try:
+                    message = res.json().get("message", "")
+                except Exception:
+                    message = ""
+                if message == "game session not finished":
+                    self.log("⌛ Game session not finished, retrying claim...", yellow)
+                    time.sleep(5)
+                    continue
+                if message == "game session not found":
+                    self.log("🚫 Game session not found, game ended.", red)
+                    break
+                if message == "Token is invalid":
+                    self.log("🔑 Token is invalid, re-authenticating...", red)
+                    self.login()  # Re-login to obtain a new token
+                    headers = {**self.HEADERS, "authorization": f"Bearer {self.token}"}
+                    continue
+
+                self.log(f"❌ Failed to earn {white}{points}{red} points from the game!", red)
+                break
+
+            # End of the game session; loop continues until game tickets are 0
 
     def load_proxies(self, filename="proxy.txt"):
         """
@@ -652,68 +873,75 @@ class blum:
             requests.put = self._original_requests["put"]
             requests.delete = self._original_requests["delete"]
 
+async def process_account(account, account_label, blu, config):
+    # Menampilkan informasi akun
+    display_account = account[:10] + "..." if len(account) > 10 else account
+    blu.log(f"👤 Processing {account_label}: {display_account}", Fore.YELLOW)
+    
+    # Override proxy jika diaktifkan
+    if config.get("proxy", False):
+        blu.override_requests()
+    else:
+        blu.log("[CONFIG] Proxy: ❌ Disabled", Fore.RED)
+    
+    # Login (fungsi blocking, jadi dijalankan di thread terpisah)
+    await asyncio.to_thread(blu.login, account_label)
+    
+    blu.log("🛠️ Starting task execution...", Fore.CYAN)
+    tasks_config = {
+        "daily": "Daily Reward Check & Claim 🎁",
+        "task": "Automatically solving tasks 🤖",
+        "farming": "Automatic farming for abundant harvest 🌾",
+        "game": "Play exciting game and earn points 🎮",
+    }
+    
+    for task_key, task_name in tasks_config.items():
+        task_status = config.get(task_key, False)
+        color = Fore.YELLOW if task_status else Fore.RED
+        blu.log(f"[CONFIG] {task_name}: {'✅ Enabled' if task_status else '❌ Disabled'}", color)
+        if task_status:
+            blu.log(f"🔄 Executing {task_name}...", Fore.CYAN)
+            await asyncio.to_thread(getattr(blu, task_key))
+    
+    delay_switch = config.get("delay_account_switch", 10)
+    blu.log(f"➡️ Finished processing {account_label}. Waiting {Fore.WHITE}{delay_switch}{Fore.CYAN} seconds before next account.", Fore.CYAN)
+    await asyncio.sleep(delay_switch)
 
-if __name__ == "__main__":
-    blu = blum()
-    index = 0
-    max_index = len(blu.query_list)
+async def process_partition(accounts, blu, config, partition_number):
+    """
+    Fungsi ini memproses kumpulan akun milik satu partisi.
+    Misal, jika ada 2 thread, partisi 1 akan menangani akun ke-1, ke-3, ke-5, dst.
+    """
+    for idx, account in enumerate(accounts):
+        account_label = f"Thread-{partition_number} Account-{idx+1}"
+        await process_account(account, account_label, blu, config)
+
+async def main():
+    blu = blum()  # Inisialisasi instance class blum Anda
     config = blu.load_config()
+    all_accounts = blu.query_list
+    num_threads = config.get("thread", 1)  # Jumlah thread sesuai konfigurasi
+    
     if config.get("proxy", False):
         proxies = blu.load_proxies()
-
-    blu.log(
-        "🎉 [LIVEXORDS] === Welcome to Blum Automation === [LIVEXORDS]", Fore.YELLOW
-    )
-    blu.log(f"📂 Loaded {max_index} accounts from query list.", Fore.YELLOW)
-
+    
+    blu.log("🎉 [LIVEXORDS] === Welcome to Blum Automation === [LIVEXORDS]", Fore.YELLOW)
+    blu.log(f"📂 Loaded {len(all_accounts)} accounts from query list.", Fore.YELLOW)
+    
+    # Membagi akun ke dalam partisi sesuai jumlah thread
+    partitions = [all_accounts[i::num_threads] for i in range(num_threads)]
+    
     while True:
-        current_account = blu.query_list[index]
-        display_account = (
-            current_account[:10] + "..."
-            if len(current_account) > 10
-            else current_account
-        )
+        # Buat task untuk setiap partisi
+        tasks = []
+        for idx, part in enumerate(partitions):
+            tasks.append(asyncio.create_task(process_partition(part, blu, config, idx + 1)))
+        await asyncio.gather(*tasks)
+        
+        blu.log("🔁 All account partitions processed. Restarting loop.", Fore.CYAN)
+        delay_loop = config.get("delay_loop", 30)
+        blu.log(f"⏳ Sleeping for {Fore.WHITE}{delay_loop}{Fore.CYAN} seconds before restarting.", Fore.CYAN)
+        await asyncio.sleep(delay_loop)
 
-        blu.log(
-            f"👤 [ACCOUNT] Processing account {index + 1}/{max_index}: {display_account}",
-            Fore.YELLOW,
-        )
-
-        if config.get("proxy", False):
-            blu.override_requests()
-        else:
-            blu.log("[CONFIG] Proxy: ❌ Disabled", Fore.RED)
-
-        blu.login(index)
-
-        blu.log("🛠️ Starting task execution...")
-        tasks = {
-            "daily": "auto daily",
-            "task": "Automatically solving tasks 🤖",
-            "farming": "Automatic farming for abundant harvest 🌾",
-        }
-
-        for task_key, task_name in tasks.items():
-            task_status = config.get(task_key, False)
-            blu.log(
-                f"[CONFIG] {task_name}: {'✅ Enabled' if task_status else '❌ Disabled'}",
-                Fore.YELLOW if task_status else Fore.RED,
-            )
-
-            if task_status:
-                blu.log(f"🔄 Executing {task_name}...")
-                getattr(blu, task_key)()
-
-        if index == max_index - 1:
-            blu.log("🔁 All accounts processed. Restarting loop.")
-            blu.log(
-                f"⏳ Sleeping for {config.get('delay_loop', 30)} seconds before restarting."
-            )
-            time.sleep(config.get("delay_loop", 30))
-            index = 0
-        else:
-            blu.log(
-                f"➡️ Switching to the next account in {config.get('delay_account_switch', 10)} seconds."
-            )
-            time.sleep(config.get("delay_account_switch", 10))
-            index += 1
+if __name__ == "__main__":
+    asyncio.run(main())

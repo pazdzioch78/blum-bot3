@@ -1,5 +1,3 @@
-Berikut adalah contoh README yang telah dimodifikasi sesuai instruksi:
-
 ---
 
 <h1 align="center">Blum Bot</h1>
@@ -14,24 +12,28 @@ The Blum Bot is designed to automate various tasks in **Blum**, including:
 
 - **Auto Farming:** Automate your farming process to maximize in-game rewards.
 - **Auto Task:** Automatically execute tasks and claim rewards.
-- **Auto Daily:** Claim your daily rewards without manual intervention.
+- **Auto Daily:** Check and claim your daily rewards without manual intervention, including friend reward claims.
+- **Auto Game:** Play games automatically to earn points within your configured range.
 
 Additionally, the bot offers advanced features such as:
 
 - **Multi-Account Support:** Manage multiple accounts simultaneously.
+- **Multi-Threading Support:** Process multiple accounts concurrently according to your configuration.
 - **Proxy Support:** Dynamically assign proxies for each account.
 - **Delay Loop and Account Switching:** Configure delay intervals for looping and switching accounts to optimize performance.
 
 ---
 
-## 🌟 Version v1.0.0
+## 🌟 Version v1.1.0
 
 ### Updates
 
-- **Core Feature Update:**  
-  Now with integrated support for Auto Farming, Auto Task, and Auto Daily, Blum Bot streamlines your routine operations.  
-- **Enhanced Automation:**  
-  The bot now automates the most critical tasks, reducing manual effort and increasing efficiency.
+- **Auto Daily Improvement:** Refined the auto daily reward feature to ensure reliable claim and error handling.
+- **Auto Farming Improvement:** Fixed issues in the auto farming functionality for smoother operation.
+- **New Auto Game Feature:** Added an auto game feature that automatically plays games and earns points randomized between your defined `low_point` and `high_point`.
+- **Friend Reward Claim Integration:** Integrated auto claim for friend rewards into the daily feature.
+- **Multi-Threading Support:** Introduced multi-threading to process multiple accounts concurrently.
+- **Updated Config:** The configuration file now includes new variables: `game`, `thread`, `low_point`, and `high_point` for enhanced control over bot behavior.
 
 ---
 
@@ -39,8 +41,10 @@ Additionally, the bot offers advanced features such as:
 
 - **Auto Farming:** Automatically handle farming sessions and reward claims.
 - **Auto Task:** Execute and claim available tasks automatically.
-- **Auto Daily:** Check and claim daily rewards based on your schedule.
+- **Auto Daily:** Check and claim daily rewards along with friend rewards seamlessly.
+- **Auto Game:** Automatically play games and claim points within your defined range.
 - **Multi-Account Support:** Manage multiple accounts simultaneously.
+- **Multi-Threading Support:** Process multiple accounts concurrently with adjustable thread settings.
 - **Proxy Support:** Dynamically assign proxies for each account.
 - **Delay Loop and Account Switching:** Set custom intervals for looping and account transitions.
 
@@ -50,23 +54,31 @@ Additionally, the bot offers advanced features such as:
 
 ```json
 {
-    "daily": true,
-    "task": true,
-    "farming": true,
-    "proxy": false,
-    "delay_account_switch": 10,
-    "delay_loop": 3000
+  "game": true,
+  "daily": true,
+  "task": true,
+  "farming": true,
+  "low_point": 260,
+  "high_point": 280,
+  "thread": 1,
+  "proxy": false,
+  "delay_account_switch": 10,
+  "delay_loop": 3000
 }
 ```
 
-| **Function**             | **Description**                                    | **Default** |
-| ------------------------ | -------------------------------------------------- | ----------- |
-| `daily`                  | Automate daily reward claims                       | `true`      |
-| `task`                   | Automate task execution and reward claims          | `true`      |
-| `farming`                | Automate farming sessions and reward claims        | `true`      |
-| `proxy`                  | Enable/Disable proxy usage                         | `false`     |
-| `delay_account_switch`   | Delay between account switches (seconds)           | `10`        |
-| `delay_loop`             | Delay before the next loop iteration (milliseconds) | `3000`      |
+| **Function**           | **Description**                                                                     | **Default** |
+| ---------------------- | ----------------------------------------------------------------------------------- | ----------- |
+| `game`                 | Automate game play to earn points (randomized between `low_point` and `high_point`) | `true`      |
+| `daily`                | Automate daily reward check & claim, including friend reward claim                  | `true`      |
+| `task`                 | Automate task execution and reward claims                                           | `true`      |
+| `farming`              | Automate farming sessions and reward claims                                         | `true`      |
+| `low_point`            | Minimum points for auto game reward (used for randomization)                        | `260`       |
+| `high_point`           | Maximum points for auto game reward (used for randomization)                        | `280`       |
+| `thread`               | Number of concurrent threads (accounts) to process                                  | `1`         |
+| `proxy`                | Enable/Disable proxy usage                                                          | `false`     |
+| `delay_account_switch` | Delay between account switches (in seconds)                                         | `10`        |
+| `delay_loop`           | Delay before the next loop iteration (in milliseconds)                              | `3000`      |
 
 ---
 
@@ -125,7 +137,8 @@ Start using Blum Bot by registering through the following link:
 
 ---
 
-### 🔹 Want Free Proxies?  
+### 🔹 Want Free Proxies?
+
 You can obtain free proxies from [Webshare.io](https://www.webshare.io/).
 
 ---
@@ -139,5 +152,3 @@ This project is developed by **Livexords**. If you have suggestions, questions, 
     <img src="https://img.shields.io/static/v1?message=Livexords&logo=telegram&label=&color=2CA5E0&logoColor=white&labelColor=&style=for-the-badge" height="25" alt="telegram logo" />
   </a>
 </div>
-
----
