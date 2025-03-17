@@ -873,7 +873,7 @@ class blum:
             requests.put = self._original_requests["put"]
             requests.delete = self._original_requests["delete"]
 
-async def process_account(account, account_label, blu, config):
+async def process_account(account, original_index, account_label, blu, config):
     # Menampilkan informasi akun
     display_account = account[:10] + "..." if len(account) > 10 else account
     blu.log(f"👤 Processing {account_label}: {display_account}", Fore.YELLOW)
@@ -884,8 +884,8 @@ async def process_account(account, account_label, blu, config):
     else:
         blu.log("[CONFIG] Proxy: ❌ Disabled", Fore.RED)
     
-    # Login (fungsi blocking, jadi dijalankan di thread terpisah)
-    await asyncio.to_thread(blu.login, account_label)
+    # Login (fungsi blocking, dijalankan di thread terpisah) dengan menggunakan index asli (integer)
+    await asyncio.to_thread(blu.login, original_index)
     
     blu.log("🛠️ Starting task execution...", Fore.CYAN)
     tasks_config = {
@@ -907,20 +907,26 @@ async def process_account(account, account_label, blu, config):
     blu.log(f"➡️ Finished processing {account_label}. Waiting {Fore.WHITE}{delay_switch}{Fore.CYAN} seconds before next account.", Fore.CYAN)
     await asyncio.sleep(delay_switch)
 
-async def process_partition(accounts, blu, config, partition_number):
+async def worker(worker_id, blu, config, queue):
     """
-    Fungsi ini memproses kumpulan akun milik satu partisi.
-    Misal, jika ada 2 thread, partisi 1 akan menangani akun ke-1, ke-3, ke-5, dst.
+    Setiap worker akan mengambil satu akun dari antrian dan memprosesnya secara berurutan.
+    Worker tidak akan mengambil akun baru sebelum akun sebelumnya selesai diproses.
     """
-    for idx, account in enumerate(accounts):
-        account_label = f"Thread-{partition_number} Account-{idx+1}"
-        await process_account(account, account_label, blu, config)
+    while True:
+        try:
+            original_index, account = queue.get_nowait()
+        except asyncio.QueueEmpty:
+            break
+        account_label = f"Worker-{worker_id} Account-{original_index+1}"
+        await process_account(account, original_index, account_label, blu, config)
+        queue.task_done()
+    blu.log(f"Worker-{worker_id} finished processing all assigned accounts.", Fore.CYAN)
 
 async def main():
     blu = blum()  # Inisialisasi instance class blum Anda
     config = blu.load_config()
     all_accounts = blu.query_list
-    num_threads = config.get("thread", 1)  # Jumlah thread sesuai konfigurasi
+    num_threads = config.get("thread", 1)  # Jumlah worker sesuai konfigurasi
     
     if config.get("proxy", False):
         proxies = blu.load_proxies()
@@ -928,17 +934,23 @@ async def main():
     blu.log("🎉 [LIVEXORDS] === Welcome to Blum Automation === [LIVEXORDS]", Fore.YELLOW)
     blu.log(f"📂 Loaded {len(all_accounts)} accounts from query list.", Fore.YELLOW)
     
-    # Membagi akun ke dalam partisi sesuai jumlah thread
-    partitions = [all_accounts[i::num_threads] for i in range(num_threads)]
-    
     while True:
-        # Buat task untuk setiap partisi
-        tasks = []
-        for idx, part in enumerate(partitions):
-            tasks.append(asyncio.create_task(process_partition(part, blu, config, idx + 1)))
-        await asyncio.gather(*tasks)
+        # Buat queue baru dan masukkan semua akun (dengan index asli)
+        queue = asyncio.Queue()
+        for idx, account in enumerate(all_accounts):
+            queue.put_nowait((idx, account))
         
-        blu.log("🔁 All account partitions processed. Restarting loop.", Fore.CYAN)
+        # Buat task worker sesuai dengan jumlah thread yang diinginkan
+        workers = [asyncio.create_task(worker(i+1, blu, config, queue)) for i in range(num_threads)]
+        
+        # Tunggu hingga semua akun di queue telah diproses
+        await queue.join()
+        
+        # Opsional: batalkan task worker (agar tidak terjadi tumpang tindih)
+        for w in workers:
+            w.cancel()
+        
+        blu.log("🔁 All accounts processed. Restarting loop.", Fore.CYAN)
         delay_loop = config.get("delay_loop", 30)
         blu.log(f"⏳ Sleeping for {Fore.WHITE}{delay_loop}{Fore.CYAN} seconds before restarting.", Fore.CYAN)
         await asyncio.sleep(delay_loop)

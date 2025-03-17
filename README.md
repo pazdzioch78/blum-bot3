@@ -24,16 +24,11 @@ Additionally, the bot offers advanced features such as:
 
 ---
 
-## 🌟 Version v1.1.0
+## 🌟 Version v1.1.1
 
 ### Updates
 
-- **Auto Daily Improvement:** Refined the auto daily reward feature to ensure reliable claim and error handling.
-- **Auto Farming Improvement:** Fixed issues in the auto farming functionality for smoother operation.
-- **New Auto Game Feature:** Added an auto game feature that automatically plays games and earns points randomized between your defined `low_point` and `high_point`.
-- **Friend Reward Claim Integration:** Integrated auto claim for friend rewards into the daily feature.
-- **Multi-Threading Support:** Introduced multi-threading to process multiple accounts concurrently.
-- **Updated Config:** The configuration file now includes new variables: `game`, `thread`, `low_point`, and `high_point` for enhanced control over bot behavior.
+- **Multi-Threading Error Fix:** Fixed error in the multi-threading system.
 
 ---
 
