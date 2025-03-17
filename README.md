@@ -149,3 +149,9 @@ This project is developed by **Livexords**. If you have suggestions, questions, 
 </div>
 
 ---
+
+## 🙌 **Contributors**
+
+- @Baronzs103
+
+---

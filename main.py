@@ -37,6 +37,7 @@ class blum:
         """Displays the banner for the bot."""
         self.log("🎉 Blum Free Bot", Fore.CYAN)
         self.log("🚀 Created by LIVEXORDS", Fore.CYAN)
+        self.log("👥 Contributors: @Baronzs103", Fore.CYAN)
         self.log("📢 Channel: t.me/livexordsscript\n", Fore.CYAN)
 
     def log(self, message, color=Fore.RESET):
