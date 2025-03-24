@@ -24,11 +24,12 @@ Additionally, the bot offers advanced features such as:
 
 ---
 
-## 🌟 Version v1.1.1
+## 🌟 Version v1.1.2
 
 ### Updates
 
-- **Multi-Threading Error Fix:** Fixed error in the multi-threading system.
+1. Fixed a bug where the script was not working on some devices.  
+2. Added a new solver for the latest quest from Blum.
 
 ---
 
