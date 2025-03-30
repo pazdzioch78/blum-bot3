@@ -38,7 +38,7 @@ Additionally, Blum Bot offers advanced features such as:
 
 ---
 
-## 🌟 Version v1.1.2
+## 🌟 Version v1.1.3
 
 ### Updates
 
