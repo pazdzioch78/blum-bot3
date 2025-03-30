@@ -1,11 +1,17 @@
 from datetime import datetime
-import json
 import time
 from colorama import Fore
 import requests
 import random
 from fake_useragent import UserAgent
 import asyncio
+import json
+import gzip
+import brotli
+import zlib
+import chardet
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 class blum:
     BASE_URL = "https://user-domain.blum.codes/api/v1/"
@@ -33,6 +39,7 @@ class blum:
         self.token = None
         self.config = self.load_config()
         self.uid = None
+        self.session = self.sessions()
 
     def banner(self) -> None:
         """Displays the banner for the bot."""
@@ -51,6 +58,14 @@ class blum:
             + safe_message
             + Fore.RESET
         )
+        
+    def sessions(self):
+        session = requests.Session()
+        retries = Retry(total=3,
+                        backoff_factor=1,
+                        status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+        return session
 
     def load_config(self) -> dict:
         """
@@ -103,6 +118,60 @@ class blum:
             self.log(f"❌ Unexpected error loading queries: {e}", Fore.RED)
             return []
 
+    def decode_response(self, response):
+        """
+        Mendekode response dari server secara umum.
+
+        Parameter:
+            response: objek requests.Response
+
+        Mengembalikan:
+            - Jika Content-Type mengandung 'application/json', maka mengembalikan objek Python (dict atau list) hasil parsing JSON.
+            - Jika bukan JSON, maka mengembalikan string hasil decode.
+        """
+        # Ambil header
+        content_encoding = response.headers.get('Content-Encoding', '').lower()
+        content_type = response.headers.get('Content-Type', '').lower()
+
+        # Tentukan charset dari Content-Type, default ke utf-8
+        charset = 'utf-8'
+        if 'charset=' in content_type:
+            charset = content_type.split('charset=')[-1].split(';')[0].strip()
+
+        # Ambil data mentah
+        data = response.content
+
+        # Dekompresi jika perlu
+        try:
+            if content_encoding == 'gzip':
+                data = gzip.decompress(data)
+            elif content_encoding in ['br', 'brotli']:
+                data = brotli.decompress(data)
+            elif content_encoding in ['deflate', 'zlib']:
+                data = zlib.decompress(data)
+        except Exception:
+            # Jika dekompresi gagal, lanjutkan dengan data asli
+            pass
+
+        # Coba decode menggunakan charset yang didapat
+        try:
+            text = data.decode(charset)
+        except Exception:
+            # Fallback: deteksi encoding dengan chardet
+            detection = chardet.detect(data)
+            detected_encoding = detection.get("encoding", "utf-8")
+            text = data.decode(detected_encoding, errors='replace')
+
+        # Jika konten berupa JSON, kembalikan hasil parsing JSON
+        if 'application/json' in content_type:
+            try:
+                return json.loads(text)
+            except Exception:
+                # Jika parsing JSON gagal, kembalikan string hasil decode
+                return text
+        else:
+            return text
+        
     def login(self, index: int) -> None:
         self.log("🔐 Attempting to log in...", Fore.GREEN)
         if index >= len(self.query_list):
@@ -127,8 +196,8 @@ class blum:
         try:
             self.log("📡 Sending login request...", Fore.CYAN)
             login_response = requests.post(login_url, headers=login_headers, data=payload)
-            login_response.raise_for_status()
-            login_data = login_response.json()
+            login_response.raise_for_status() 
+            login_data = self.decode_response(login_response)
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Failed to send login request: {e}", Fore.RED)
             try:
@@ -164,7 +233,7 @@ class blum:
             self.log("📡 Sending user info request...", Fore.CYAN)
             user_me_response = requests.get(user_me_url, headers=user_me_headers)
             user_me_response.raise_for_status()
-            user_me_data = user_me_response.json()
+            user_me_data = self.decode_response(user_me_response)
 
             # Proses respons user/me
             u_id = user_me_data.get("id", {}).get("id", "N/A")
@@ -198,7 +267,7 @@ class blum:
             self.log("📡 Sending friends balance request...", Fore.CYAN)
             friends_response = requests.get(friends_balance_url, headers=user_balance_headers)
             friends_response.raise_for_status()
-            friends_data = friends_response.json()
+            friends_data = self.decode_response(friends_response)
 
             # Proses respons friends balance
             limit_inv = friends_data.get("limitInvitation", "N/A")
@@ -243,7 +312,7 @@ class blum:
             self.log("📡 Sending GET daily reward request...", Fore.CYAN)
             response = requests.get(daily_url, headers=daily_headers)
             response.raise_for_status()
-            data = response.json()
+            data = self.decode_response(response)
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Failed to fetch daily reward info: {e}", Fore.RED)
             try:
@@ -284,7 +353,7 @@ class blum:
             self.log("🚀 Claiming daily reward...", Fore.CYAN)
             claim_response = requests.post(daily_url, headers=daily_headers)
             claim_response.raise_for_status()
-            claim_data = claim_response.json()
+            claim_data = self.decode_response(claim_response)
             self.log("✅ Daily reward claimed successfully:", Fore.GREEN)
             self.log(f"    - Response: {claim_data}", Fore.CYAN)
         except requests.exceptions.RequestException as e:
@@ -308,7 +377,7 @@ class blum:
             self.log("📡 Checking friend reward balance...", Fore.CYAN)
             fb_response = requests.get(friends_balance_url, headers=daily_headers)
             fb_response.raise_for_status()
-            fb_data = fb_response.json()
+            fb_data = self.decode_response(fb_response)
             amount = fb_data.get("amount", "N/A")
             can_claim = fb_data.get("canClaim", False)
             can_claim_at = fb_data.get("canClaimAt", None)
@@ -338,7 +407,7 @@ class blum:
                 self.log("🚀 Claiming friend reward...", Fore.CYAN)
                 friends_claim_response = requests.post(friends_claim_url, headers=daily_headers)
                 friends_claim_response.raise_for_status()
-                friends_claim_data = friends_claim_response.json()
+                friends_claim_data = self.decode_response(friends_claim_response)
                 self.log("✅ Friend reward claimed successfully:", Fore.GREEN)
                 self.log(f"    - Claimed Amount: {friends_claim_data.get('amount', 'N/A')}", Fore.CYAN)
             except requests.exceptions.RequestException as e:
@@ -371,7 +440,7 @@ class blum:
             self.log("🔑 Loading task keyword mapping from GitHub...", Fore.GREEN)
             task_response = requests.get(task_json_url)
             task_response.raise_for_status()
-            keyword_mapping = task_response.json()
+            keyword_mapping = self.decode_response(task_response)
             self.log("✅ Loaded task keyword mapping from GitHub", Fore.GREEN)
         except Exception as e:
             self.log(f"❌ Failed to load task keyword mapping from GitHub: {e}", Fore.RED)
@@ -381,7 +450,7 @@ class blum:
         try:
             tasks_response = requests.get(tasks_url, headers=headers)
             tasks_response.raise_for_status()
-            tasks_list = tasks_response.json()
+            tasks_list = self.decode_response(task_response)
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Failed to fetch tasks: {e}", Fore.RED)
             try:
@@ -476,7 +545,7 @@ class blum:
                 else:
                     verify_response = requests.post(verify_url, headers=headers)
                 verify_response.raise_for_status()
-                verify_data = verify_response.json()
+                verify_data = self.decode_response(verify_response)
                 self.log(f"✅ Task {task_id} verified. Response: {verify_data}", Fore.GREEN)
             except requests.exceptions.RequestException as e:
                 self.log(f"❌ Failed to verify task {task_id}: {e}", Fore.RED)
@@ -501,7 +570,7 @@ class blum:
                 self.log(f"💰 Claiming task {task_id}...", Fore.CYAN)
                 claim_response = requests.post(claim_url, headers=headers)
                 claim_response.raise_for_status()
-                claim_data = claim_response.json()
+                claim_data = self.decode_response(claim_response)
                 self.log(f"✅ Task {task_id} claimed. Response: {claim_data}", Fore.GREEN)
             except requests.exceptions.RequestException as e:
                 self.log(f"❌ Failed to claim task {task_id}: {e}", Fore.RED)
@@ -527,7 +596,7 @@ class blum:
             self.log("📡 Fetching wallet points balance...", Fore.CYAN)
             balance_response = requests.get(balance_url, headers=headers)
             balance_response.raise_for_status()
-            balance_data = balance_response.json()
+            balance_data = self.decode_response(balance_response)
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Failed to fetch wallet points balance: {e}", Fore.RED)
             try:
@@ -559,7 +628,7 @@ class blum:
                 self.log("🚜 Starting farming session...", Fore.CYAN)
                 start_response = requests.post(start_url, headers=headers)
                 start_response.raise_for_status()
-                start_data = start_response.json()
+                start_data = sself.decode_response(start_response)
                 self.log("✅ Farming session started:", Fore.GREEN)
                 self.log(f"    - Start Time: {start_data.get('startTime', 'N/A')}", Fore.CYAN)
                 self.log(f"    - End Time: {start_data.get('endTime', 'N/A')}", Fore.CYAN)
@@ -604,7 +673,7 @@ class blum:
                 self.log("🚜 Claiming farming reward...", Fore.CYAN)
                 claim_response = requests.post(claim_url, headers=headers)
                 claim_response.raise_for_status()
-                claim_data = claim_response.json()
+                claim_data = self.decode_response(claim_response)
                 self.log("✅ Farming reward claimed:", Fore.GREEN)
                 self.log(f"    - Available Balance: {claim_data.get('availableBalance', 'N/A')}", Fore.CYAN)
                 self.log(f"    - Play Passes: {claim_data.get('playPasses', 'N/A')}", Fore.CYAN)
@@ -623,7 +692,7 @@ class blum:
                 self.log("🚜 Starting farming session...", Fore.CYAN)
                 start_response = requests.post(start_url, headers=headers)
                 start_response.raise_for_status()
-                start_data = start_response.json()
+                start_data = self.decode_response(start_response)
                 self.log("✅ Farming session started:", Fore.GREEN)
                 self.log(f"    - Start Time: {start_data.get('startTime', 'N/A')}", Fore.CYAN)
                 self.log(f"    - End Time: {start_data.get('endTime', 'N/A')}", Fore.CYAN)
@@ -663,7 +732,7 @@ class blum:
                 self.log("📡 Fetching wallet points balance...", cyan)
                 balance_response = requests.get(balance_url, headers=headers)
                 balance_response.raise_for_status()
-                balance_data = balance_response.json()
+                balance_data = self.decode_response(balance_response)
             except requests.exceptions.RequestException as e:
                 self.log(f"❌ Failed to fetch wallet points balance: {e}", red)
                 try:
@@ -702,7 +771,7 @@ class blum:
                 self.log("🎮 Initiating game play...", cyan)
                 game_response = requests.post(play_url, headers=headers)
                 game_response.raise_for_status()
-                game_data = game_response.json()
+                game_data = self.decode_response(game_response)
                 game_id = game_data.get("gameId")
                 if not game_id:
                     self.log("❌ Game ID not found in game play response.", red)
@@ -765,7 +834,8 @@ class blum:
                     break
 
                 try:
-                    message = res.json().get("message", "")
+                    message_raw = self.decode_response(res)
+                    message = message_raw.get("message","")
                 except Exception:
                     message = ""
                 if message == "game session not finished":
