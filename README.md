@@ -6,21 +6,35 @@
 
 ---
 
-## 🚀 **About the Bot**
+## 🚀 About the Bot
 
-The Blum Bot is designed to automate various tasks in **Blum**, including:
+Blum Bot is designed to automate various tasks in **Blum**, helping you:
 
-- **Auto Farming:** Automate your farming process to maximize in-game rewards.
-- **Auto Task:** Automatically execute tasks and claim rewards.
-- **Auto Daily:** Check and claim your daily rewards without manual intervention, including friend reward claims.
-- **Auto Game:** Play games automatically to earn points within your configured range.
+- **🌾 Auto Farming:**  
+  Automate your farming process to maximize in-game rewards.
 
-Additionally, the bot offers advanced features such as:
+- **🛠️ Auto Task:**  
+  Automatically execute tasks and claim rewards.
 
-- **Multi-Account Support:** Manage multiple accounts simultaneously.
-- **Multi-Threading Support:** Process multiple accounts concurrently according to your configuration.
-- **Proxy Support:** Dynamically assign proxies for each account.
-- **Delay Loop and Account Switching:** Configure delay intervals for looping and switching accounts to optimize performance.
+- **📆 Auto Daily:**  
+  Check and claim your daily rewards (including friend reward claims) without manual intervention.
+
+- **🎮 Auto Game:**  
+  Play games automatically to earn points within your configured range.
+
+Additionally, Blum Bot offers advanced features such as:
+
+- **👥 Multi-Account Support:**  
+  Manage multiple accounts simultaneously.
+
+- **🧵 Multi-Threading Support:**  
+  Process multiple accounts concurrently according to your configuration.
+
+- **🔌 Proxy Support:**  
+  Dynamically assign proxies for each account.
+
+- **⏱️ Delay Loop and Account Switching:**  
+  Configure delay intervals for looping and switching accounts to optimize performance.
 
 ---
 
@@ -28,25 +42,25 @@ Additionally, the bot offers advanced features such as:
 
 ### Updates
 
-1. Fixed a bug where the script was not working on some devices.  
+1. Fixed a bug where the script was not working on some devices.
 2. Added a new solver for the latest quest from Blum.
 
 ---
 
 ### **Features in This Version:**
 
-- **Auto Farming:** Automatically handle farming sessions and reward claims.
-- **Auto Task:** Execute and claim available tasks automatically.
-- **Auto Daily:** Check and claim daily rewards along with friend rewards seamlessly.
-- **Auto Game:** Automatically play games and claim points within your defined range.
-- **Multi-Account Support:** Manage multiple accounts simultaneously.
-- **Multi-Threading Support:** Process multiple accounts concurrently with adjustable thread settings.
-- **Proxy Support:** Dynamically assign proxies for each account.
-- **Delay Loop and Account Switching:** Set custom intervals for looping and account transitions.
+- **🌾 Auto Farming:** Automatically handle farming sessions and reward claims.
+- **🛠️ Auto Task:** Execute and claim available tasks automatically.
+- **📆 Auto Daily:** Check and claim daily rewards along with friend rewards seamlessly.
+- **🎮 Auto Game:** Automatically play games and claim points within your defined range.
+- **👥 Multi-Account Support:** Manage multiple accounts simultaneously.
+- **🧵 Multi-Threading Support:** Process multiple accounts concurrently with adjustable thread settings.
+- **🔌 Proxy Support:** Dynamically assign proxies for each account.
+- **⏱️ Delay Loop and Account Switching:** Set custom intervals for looping and account transitions.
 
 ---
 
-## ⚙️ **Configuration in `config.json`**
+## ⚙️ Configuration in `config.json`
 
 ```json
 {
@@ -78,19 +92,19 @@ Additionally, the bot offers advanced features such as:
 
 ---
 
-## 📥 **How to Register**
+## 📥 How to Register
 
-Start using Blum Bot by registering through the following link:
+Start using Blum Bot by registering through the link below:
 
 <div align="center">
   <a href="https://t.me/blum/app?startapp=ref_uTyHfMEx6P" target="_blank">
-    <img src="https://img.shields.io/static/v1?message=Blum&logo=telegram&label=&color=2CA5E0&logoColor=white&labelColor=&style=for-the-badge" height="25" alt="telegram logo" />
+    <img src="https://img.shields.io/static/v1?message=Blum&logo=telegram&label=&color=2CA5E0&logoColor=white&style=for-the-badge" height="25" alt="Telegram Logo" />
   </a>
 </div>
 
 ---
 
-## 📖 **Installation Steps**
+## 📖 Installation Steps
 
 1. **Clone the Repository**  
    Copy the project to your local machine:
@@ -127,6 +141,7 @@ Start using Blum Bot by registering through the following link:
 
 6. **Run the Bot**  
    Execute the bot using the following command:
+
    ```bash
    python main.py
    ```
@@ -139,20 +154,21 @@ You can obtain free proxies from [Webshare.io](https://www.webshare.io/).
 
 ---
 
-## 🛠️ **Contributing**
+## 🛠️ Contributing
 
 This project is developed by **Livexords**. If you have suggestions, questions, or would like to contribute, feel free to contact us:
 
 <div align="center">
   <a href="https://t.me/livexordsscript" target="_blank">
-    <img src="https://img.shields.io/static/v1?message=Livexords&logo=telegram&label=&color=2CA5E0&logoColor=white&labelColor=&style=for-the-badge" height="25" alt="telegram logo" />
+    <img src="https://img.shields.io/static/v1?message=Livexords&logo=telegram&label=&color=2CA5E0&logoColor=white&style=for-the-badge" height="25" alt="Telegram Logo" />
   </a>
 </div>
 
 ---
 
-## 🙌 **Contributors**
+## 🙌 Contributors
 
 - @Baronzs103
+- @bioganteng14
 
 ---

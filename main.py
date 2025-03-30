@@ -45,7 +45,7 @@ class blum:
         """Displays the banner for the bot."""
         self.log("🎉 Blum Free Bot", Fore.CYAN)
         self.log("🚀 Created by LIVEXORDS", Fore.CYAN)
-        self.log("👥 Contributors: @Baronzs103", Fore.CYAN)
+        self.log("👥 Contributors: @Baronzs103, @bioganteng14", Fore.CYAN)
         self.log("📢 Channel: t.me/livexordsscript\n", Fore.CYAN)
 
     def log(self, message, color=Fore.RESET):
@@ -63,7 +63,7 @@ class blum:
         session = requests.Session()
         retries = Retry(total=3,
                         backoff_factor=1,
-                        status_forcelist=[500, 502, 503, 504])
+                        status_forcelist=[500, 502, 503, 504, 520])
         session.mount('https://', HTTPAdapter(max_retries=retries))
         return session
 
@@ -685,7 +685,7 @@ class blum:
                     self.log(f"📄 Response content: {claim_response.text}", Fore.RED)
                 except Exception:
                     pass
-        else:
+                
             # Jika belum waktunya untuk klaim, mulai sesi farming baru
             start_url = "https://wallet-domain.blum.codes/api/v1/farming/start"
             try:
