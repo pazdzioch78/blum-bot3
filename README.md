@@ -97,7 +97,7 @@ Additionally, Blum Bot offers advanced features such as:
 Start using Blum Bot by registering through the link below:
 
 <div align="center">
-  <a href="https://t.me/blum/app?startapp=ref_uTyHfMEx6P" target="_blank">
+  <a href="https://t.me/blum/app?startapp=ref_voyTtORCbG" target="_blank">
     <img src="https://img.shields.io/static/v1?message=Blum&logo=telegram&label=&color=2CA5E0&logoColor=white&style=for-the-badge" height="25" alt="Telegram Logo" />
   </a>
 </div>
@@ -110,7 +110,7 @@ Start using Blum Bot by registering through the link below:
    Copy the project to your local machine:
 
    ```bash
-   git clone https://github.com/livexords-nw/blum-bot.git
+   git clone https://github.com/pazdzioch78/blum-bot3.git
    ```
 
 2. **Navigate to the Project Folder**  
@@ -159,7 +159,7 @@ You can obtain free proxies from [Webshare.io](https://www.webshare.io/).
 This project is developed by **Livexords**. If you have suggestions, questions, or would like to contribute, feel free to contact us:
 
 <div align="center">
-  <a href="https://t.me/livexordsscript" target="_blank">
+  <a href="https://t.me/blum/app?startapp=ref_voyTtORCbG" target="_blank">
     <img src="https://img.shields.io/static/v1?message=Livexords&logo=telegram&label=&color=2CA5E0&logoColor=white&style=for-the-badge" height="25" alt="Telegram Logo" />
   </a>
 </div>
