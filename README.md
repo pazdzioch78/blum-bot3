@@ -117,7 +117,7 @@ Start using Blum Bot by registering through the link below:
    Move to the project directory:
 
    ```bash
-   cd blum-bot
+   cd blum-bot3
    ```
 
 3. **Install Dependencies**  
