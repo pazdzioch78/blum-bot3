@@ -440,7 +440,7 @@ class blum:
             self.log("🔑 Loading task keyword mapping from GitHub...", Fore.GREEN)
             task_response = requests.get(task_json_url)
             task_response.raise_for_status()
-            keyword_mapping = self.decode_response(task_response)
+            keyword_mapping = task_response.json()
             self.log("✅ Loaded task keyword mapping from GitHub", Fore.GREEN)
         except Exception as e:
             self.log(f"❌ Failed to load task keyword mapping from GitHub: {e}", Fore.RED)
@@ -450,7 +450,7 @@ class blum:
         try:
             tasks_response = requests.get(tasks_url, headers=headers)
             tasks_response.raise_for_status()
-            tasks_list = self.decode_response(task_response)
+            tasks_list = tasks_response.json()
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Failed to fetch tasks: {e}", Fore.RED)
             try:
@@ -545,7 +545,7 @@ class blum:
                 else:
                     verify_response = requests.post(verify_url, headers=headers)
                 verify_response.raise_for_status()
-                verify_data = self.decode_response(verify_response)
+                verify_data = verify_response.json()
                 self.log(f"✅ Task {task_id} verified. Response: {verify_data}", Fore.GREEN)
             except requests.exceptions.RequestException as e:
                 self.log(f"❌ Failed to verify task {task_id}: {e}", Fore.RED)
@@ -570,7 +570,7 @@ class blum:
                 self.log(f"💰 Claiming task {task_id}...", Fore.CYAN)
                 claim_response = requests.post(claim_url, headers=headers)
                 claim_response.raise_for_status()
-                claim_data = self.decode_response(claim_response)
+                claim_data = claim_response.json()
                 self.log(f"✅ Task {task_id} claimed. Response: {claim_data}", Fore.GREEN)
             except requests.exceptions.RequestException as e:
                 self.log(f"❌ Failed to claim task {task_id}: {e}", Fore.RED)
